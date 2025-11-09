@@ -1,0 +1,13 @@
+[project]
+name = "20251109-rakuten-benchmarking"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "groq>=0.33.0",
+    "python-dotenv>=1.2.1",
+    "numpy>=1.24.0",
+    "aiohttp>=3.9.0",
+    "tqdm>=4.66.0",
+]
