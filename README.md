@@ -165,12 +165,17 @@ p99           5117.7          5701.3           583.5
 --disable-cache              Add unique prefix to prompts to prevent caching
 --output PATH                Output JSON file
 --save-raw                   Include raw request data in output
---verbose                    Print per-request details and enable INFO logging
---debug                      Enable DEBUG logging (includes content previews)
+--verbose                    Print detailed per-request info including response content
 ```
 
 ### Logging Levels
 
-- **Default**: Only warnings and errors (long requests >1s, timing anomalies)
-- **--verbose**: Adds per-request TTFT output and INFO-level logging
-- **--debug**: Adds detailed content previews and all debug messages
+- **Default**: Only warnings and errors
+  - Long requests (>1s) with full response content
+  - Timing anomalies and errors
+  - No HTTP 200 OK logs
+- **--verbose**: Detailed per-request information
+  - TTFT, E2EL, token counts for every request
+  - Full response content for all requests
+  - Server-side timing breakdown
+  - Network overhead metrics

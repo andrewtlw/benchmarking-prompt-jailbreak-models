@@ -403,6 +403,23 @@ def print_language_comparison(metrics_by_lang: Dict[str, BenchmarkMetrics]):
                     print(f"{values[1]-values[0]:>12.1f}", end="")
                 print()
 
+        # Prompt Time
+        if first_metric.prompt_time_stats:
+            for p in percentiles:
+                print(f"{'Prompt Time':<20}p{p:<10d}", end="")
+                values = []
+                for lang in languages:
+                    metric = metrics_by_lang[lang]
+                    if metric.prompt_time_stats and p in metric.prompt_time_stats.percentiles:
+                        val = metric.prompt_time_stats.percentiles[p] * 1000
+                        values.append(val)
+                        print(f"{val:>12.1f}", end="")
+                    else:
+                        print(f"{'N/A':>12}", end="")
+                if len(values) == 2:
+                    print(f"{values[1]-values[0]:>12.1f}", end="")
+                print()
+
         # Completion Time
         if first_metric.completion_time_stats:
             for p in percentiles:
@@ -436,22 +453,31 @@ def print_language_comparison(metrics_by_lang: Dict[str, BenchmarkMetrics]):
                 print(f"{values[1]-values[0]:>12.1f}", end="")
             print()
 
-        # Network Time
-        if first_metric.network_time_stats:
-            for p in percentiles:
-                print(f"{'Network Overhead':<20}p{p:<10d}", end="")
-                values = []
-                for lang in languages:
-                    metric = metrics_by_lang[lang]
-                    if metric.network_time_stats and p in metric.network_time_stats.percentiles:
-                        val = metric.network_time_stats.percentiles[p] * 1000
-                        values.append(val)
-                        print(f"{val:>12.1f}", end="")
-                    else:
-                        print(f"{'N/A':>12}", end="")
-                if len(values) == 2:
-                    print(f"{values[1]-values[0]:>12.1f}", end="")
-                print()
+    # Network Overhead - separate section
+    if first_metric.network_time_stats:
+        print(f"\nNetwork Overhead - in milliseconds")
+        print(f"{'Percentile':<12}", end="")
+        for lang in languages:
+            print(f"{lang:>12}", end="")
+        if len(languages) == 2:
+            print(f"{'Difference':>12}", end="")
+        print()
+        print("-" * (12 + 12 * len(languages) + (12 if len(languages) == 2 else 0)))
+
+        for p in percentiles:
+            print(f"p{p:<10d}", end="")
+            values = []
+            for lang in languages:
+                metric = metrics_by_lang[lang]
+                if metric.network_time_stats and p in metric.network_time_stats.percentiles:
+                    val = metric.network_time_stats.percentiles[p] * 1000
+                    values.append(val)
+                    print(f"{val:>12.1f}", end="")
+                else:
+                    print(f"{'N/A':>12}", end="")
+            if len(values) == 2:
+                print(f"{values[1]-values[0]:>12.1f}", end="")
+            print()
 
     print(f"\n{'='*100}\n")
 
