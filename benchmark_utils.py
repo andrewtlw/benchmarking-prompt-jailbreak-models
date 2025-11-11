@@ -359,7 +359,7 @@ def print_language_comparison(metrics_by_lang: Dict[str, BenchmarkMetrics]):
         for lang in languages:
             ttft_table.add_column(lang.upper(), justify="right", style="green")
         if len(languages) == 2:
-            ttft_table.add_column("Difference", justify="right", style="yellow")
+            ttft_table.add_column("Difference (%)", justify="right", style="yellow")
 
         for p in percentiles:
             row = [f"p{p}"]
@@ -373,10 +373,13 @@ def print_language_comparison(metrics_by_lang: Dict[str, BenchmarkMetrics]):
                 else:
                     row.append("N/A")
 
-            if len(values) == 2:
-                diff = values[1] - values[0]
-                color = "red" if diff > 0 else "green" if diff < 0 else "white"
-                row.append(f"[{color}]{diff:+.1f}[/{color}]")
+            if len(values) == 2 and values[0] > 0:
+                # Calculate percentage change: ((Japanese - English) / English) * 100
+                pct_diff = ((values[1] - values[0]) / values[0]) * 100
+                color = "red" if pct_diff > 0 else "green" if pct_diff < 0 else "white"
+                row.append(f"[{color}]{pct_diff:+.1f}%[/{color}]")
+            elif len(values) == 2:
+                row.append("N/A")
 
             ttft_table.add_row(*row)
 
@@ -394,7 +397,7 @@ def print_language_comparison(metrics_by_lang: Dict[str, BenchmarkMetrics]):
         for lang in languages:
             e2el_table.add_column(lang.upper(), justify="right", style="green")
         if len(languages) == 2:
-            e2el_table.add_column("Difference", justify="right", style="yellow")
+            e2el_table.add_column("Difference (%)", justify="right", style="yellow")
 
         for p in percentiles:
             row = [f"p{p}"]
@@ -408,10 +411,13 @@ def print_language_comparison(metrics_by_lang: Dict[str, BenchmarkMetrics]):
                 else:
                     row.append("N/A")
 
-            if len(values) == 2:
-                diff = values[1] - values[0]
-                color = "red" if diff > 0 else "green" if diff < 0 else "white"
-                row.append(f"[{color}]{diff:+.1f}[/{color}]")
+            if len(values) == 2 and values[0] > 0:
+                # Calculate percentage change: ((Japanese - English) / English) * 100
+                pct_diff = ((values[1] - values[0]) / values[0]) * 100
+                color = "red" if pct_diff > 0 else "green" if pct_diff < 0 else "white"
+                row.append(f"[{color}]{pct_diff:+.1f}%[/{color}]")
+            elif len(values) == 2:
+                row.append("N/A")
 
             e2el_table.add_row(*row)
 
@@ -430,7 +436,7 @@ def print_language_comparison(metrics_by_lang: Dict[str, BenchmarkMetrics]):
         for lang in languages:
             server_table.add_column(lang.upper(), justify="right", style="green")
         if len(languages) == 2:
-            server_table.add_column("Difference", justify="right", style="yellow")
+            server_table.add_column("Difference (%)", justify="right", style="yellow")
 
         # Queue Time
         if first_metric.queue_time_stats:
@@ -445,10 +451,12 @@ def print_language_comparison(metrics_by_lang: Dict[str, BenchmarkMetrics]):
                         row.append(f"{val:.1f}")
                     else:
                         row.append("N/A")
-                if len(values) == 2:
-                    diff = values[1] - values[0]
-                    color = "red" if diff > 0 else "green" if diff < 0 else "white"
-                    row.append(f"[{color}]{diff:+.1f}[/{color}]")
+                if len(values) == 2 and values[0] > 0:
+                    pct_diff = ((values[1] - values[0]) / values[0]) * 100
+                    color = "red" if pct_diff > 0 else "green" if pct_diff < 0 else "white"
+                    row.append(f"[{color}]{pct_diff:+.1f}%[/{color}]")
+                elif len(values) == 2:
+                    row.append("N/A")
                 server_table.add_row(*row)
 
         # Prompt Time
@@ -464,10 +472,12 @@ def print_language_comparison(metrics_by_lang: Dict[str, BenchmarkMetrics]):
                         row.append(f"{val:.1f}")
                     else:
                         row.append("N/A")
-                if len(values) == 2:
-                    diff = values[1] - values[0]
-                    color = "red" if diff > 0 else "green" if diff < 0 else "white"
-                    row.append(f"[{color}]{diff:+.1f}[/{color}]")
+                if len(values) == 2 and values[0] > 0:
+                    pct_diff = ((values[1] - values[0]) / values[0]) * 100
+                    color = "red" if pct_diff > 0 else "green" if pct_diff < 0 else "white"
+                    row.append(f"[{color}]{pct_diff:+.1f}%[/{color}]")
+                elif len(values) == 2:
+                    row.append("N/A")
                 server_table.add_row(*row)
 
         # Completion Time
@@ -483,10 +493,12 @@ def print_language_comparison(metrics_by_lang: Dict[str, BenchmarkMetrics]):
                         row.append(f"{val:.1f}")
                     else:
                         row.append("N/A")
-                if len(values) == 2:
-                    diff = values[1] - values[0]
-                    color = "red" if diff > 0 else "green" if diff < 0 else "white"
-                    row.append(f"[{color}]{diff:+.1f}[/{color}]")
+                if len(values) == 2 and values[0] > 0:
+                    pct_diff = ((values[1] - values[0]) / values[0]) * 100
+                    color = "red" if pct_diff > 0 else "green" if pct_diff < 0 else "white"
+                    row.append(f"[{color}]{pct_diff:+.1f}%[/{color}]")
+                elif len(values) == 2:
+                    row.append("N/A")
                 server_table.add_row(*row)
 
         # Server Total Time
@@ -501,10 +513,12 @@ def print_language_comparison(metrics_by_lang: Dict[str, BenchmarkMetrics]):
                     row.append(f"{val:.1f}")
                 else:
                     row.append("N/A")
-            if len(values) == 2:
-                diff = values[1] - values[0]
-                color = "red" if diff > 0 else "green" if diff < 0 else "white"
-                row.append(f"[{color}]{diff:+.1f}[/{color}]")
+            if len(values) == 2 and values[0] > 0:
+                pct_diff = ((values[1] - values[0]) / values[0]) * 100
+                color = "red" if pct_diff > 0 else "green" if pct_diff < 0 else "white"
+                row.append(f"[{color}]{pct_diff:+.1f}%[/{color}]")
+            elif len(values) == 2:
+                row.append("N/A")
             server_table.add_row(*row)
 
         console.print(server_table)
@@ -521,7 +535,7 @@ def print_language_comparison(metrics_by_lang: Dict[str, BenchmarkMetrics]):
         for lang in languages:
             network_table.add_column(lang.upper(), justify="right", style="green")
         if len(languages) == 2:
-            network_table.add_column("Difference", justify="right", style="yellow")
+            network_table.add_column("Difference (%)", justify="right", style="yellow")
 
         for p in percentiles:
             row = [f"p{p}"]
@@ -534,10 +548,12 @@ def print_language_comparison(metrics_by_lang: Dict[str, BenchmarkMetrics]):
                     row.append(f"{val:.1f}")
                 else:
                     row.append("N/A")
-            if len(values) == 2:
-                diff = values[1] - values[0]
-                color = "red" if diff > 0 else "green" if diff < 0 else "white"
-                row.append(f"[{color}]{diff:+.1f}[/{color}]")
+            if len(values) == 2 and values[0] > 0:
+                pct_diff = ((values[1] - values[0]) / values[0]) * 100
+                color = "red" if pct_diff > 0 else "green" if pct_diff < 0 else "white"
+                row.append(f"[{color}]{pct_diff:+.1f}%[/{color}]")
+            elif len(values) == 2:
+                row.append("N/A")
             network_table.add_row(*row)
 
         console.print(network_table)
