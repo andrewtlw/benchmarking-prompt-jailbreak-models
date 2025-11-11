@@ -1,29 +1,5 @@
 # Benchmark Metrics Explained
 
-## Understanding High E2EL with Low TTFT
-
-When you observe **high End-to-End Latency (E2EL) but low Time to First Token (TTFT)**, this indicates:
-
-### Possible Causes
-
-1. **Long Output Generation**
-   - The model generates many tokens after the first one
-   - Even if first token arrives quickly, total time increases with output length
-
-2. **Slow Token Generation Rate**
-   - High TPOT (Time Per Output Token)
-   - Each subsequent token takes longer to generate
-   - Japanese text may require more tokens than English for similar content
-
-3. **Network Latency During Streaming**
-   - Latency accumulates as each token is transmitted
-   - Shown in "Network Overhead" metric
-
-4. **Server-Side Processing Time**
-   - Queue time - waiting for resources
-   - Completion time - actual generation time
-   - These are now visible in the server-side breakdown
-
 ## Metric Breakdown
 
 ### Client-Side Metrics
@@ -162,54 +138,6 @@ Shows where time is spent on server:
 
 ### Network Overhead
 Shows client-side and network latency - helps identify if bottleneck is server or network.
-
-## Key Takeaways
-
-1. **Low TTFT + High E2EL** = Long generation time, not startup delay
-2. **Server Total < E2EL** = Network overhead exists (always true)
-3. **Queue Time Varies** = Server capacity fluctuates
-4. **Completion Time Varies by Language** = Model efficiency differences
-5. **Network Overhead Stable** = Network is not the primary variable
-
-Use these metrics to:
-- Identify bottlenecks (server vs network)
-- Optimize concurrency and rate limiting
-- Choose appropriate models for your use case
-- Understand language-specific performance characteristics
-
-## Known Issues and Limitations
-
-### TPOT Calculation
-
-**Current Implementation**: TPOT is calculated as the average of inter-token latencies.
-
-```python
-@property
-def tpot(self) -> Optional[float]:
-    """Time per output token (seconds)."""
-    if self.itl and len(self.itl) > 0:
-        return sum(self.itl) / len(self.itl)
-    return None
-```
-
-**Issue**: This method:
-- Only averages the time between tokens 2-N
-- Does not include TTFT in the calculation
-- Does not normalize by actual token count from the API
-
-**Correct Formula**: `TPOT = (E2EL - TTFT) / completion_tokens`
-
-**Impact**: TPOT metrics may underestimate the true time per output token, especially when TTFT is significantly different from subsequent inter-token intervals.
-
-**Workaround**: Use the server-side `completion_time / completion_tokens` metric when available, or manually calculate using `(E2EL - TTFT) / completion_tokens` from the raw results.
-
-### Server Timing Units
-
-Server-side timings (queue_time, prompt_time, completion_time, server_total_time) are extracted from the Groq API response without unit validation. If the API returns these in milliseconds instead of seconds, it would cause:
-- Massive negative network overhead values
-- Incorrect server-side timing breakdowns
-
-**Validation**: The code includes timing anomaly detection that warns when `server_total_time > client_E2EL * 1.1`, which would catch this issue.
 
 ### Logging and Debugging
 

@@ -17,7 +17,7 @@ from pathlib import Path
 
 from groq import AsyncGroq
 from dotenv import load_dotenv
-from tqdm.asyncio import tqdm as async_tqdm
+from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn, TaskProgressColumn
 
 # Configure logging
 logging.basicConfig(
@@ -38,6 +38,7 @@ from benchmark_utils import (
     print_results_table,
     print_language_comparison,
     save_results,
+    console,
 )
 from load_datasets import load_dataset, load_multiple_datasets, get_language_counts
 
@@ -403,24 +404,34 @@ async def run_benchmark(config: BenchmarkConfig, prompts: List[Dict]) -> List[Re
                 verbose=config.verbose,
             )
 
-    print(f"\nStarting benchmark:")
-    print(f"  Model: {config.model}")
-    print(f"  Prompts: {len(prompts)}")
-    print(f"  Max Concurrency: {config.max_concurrency}")
+    console.print("\n[bold cyan]Starting benchmark:[/bold cyan]")
+    console.print(f"  Model: [yellow]{config.model}[/yellow]")
+    console.print(f"  Prompts: [yellow]{len(prompts)}[/yellow]")
+    console.print(f"  Max Concurrency: [yellow]{config.max_concurrency}[/yellow]")
     if config.reasoning_effort:
-        print(f"  Reasoning Effort: {config.reasoning_effort}")
+        console.print(f"  Reasoning Effort: [yellow]{config.reasoning_effort}[/yellow]")
     if config.disable_cache:
-        print(f"  Cache: Disabled (unique prefix added to each prompt)")
-    print()
+        console.print(f"  Cache: [red]Disabled[/red] (unique prefix added to each prompt)")
+    console.print()
 
     # Create tasks for all requests
     tasks = [bounded_request(p) for p in prompts]
 
-    # Execute with progress bar
+    # Execute with Rich progress bar
     outputs = []
-    for coro in async_tqdm.as_completed(tasks, total=len(tasks), desc="Running requests"):
-        result = await coro
-        outputs.append(result)
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        TimeElapsedColumn(),
+    ) as progress:
+        task = progress.add_task("[cyan]Running requests...", total=len(tasks))
+
+        for coro in asyncio.as_completed(tasks):
+            result = await coro
+            outputs.append(result)
+            progress.advance(task, 1)
 
     return outputs
 

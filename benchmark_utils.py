@@ -5,6 +5,12 @@ import time
 from dataclasses import dataclass, asdict, field
 from typing import List, Optional, Dict, Any
 import numpy as np
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich import box
+
+console = Console()
 
 
 @dataclass
@@ -237,249 +243,306 @@ def calculate_metrics(
 
 
 def print_results_table(metrics: BenchmarkMetrics, title: str = "Benchmark Results"):
-    """Print formatted results table."""
-    print(f"\n{'='*80}")
-    print(f"{title}")
-    print(f"{'='*80}")
+    """Print formatted results table using Rich."""
+    console.print()
 
-    print(f"\nModel: {metrics.model}")
+    # Header panel
+    header_text = f"[bold cyan]{title}[/bold cyan]\n"
+    header_text += f"Model: [yellow]{metrics.model}[/yellow]"
     if metrics.language:
-        print(f"Language: {metrics.language}")
-    print(f"Duration: {metrics.duration:.2f}s")
+        header_text += f" | Language: [yellow]{metrics.language}[/yellow]"
+    header_text += f" | Duration: [yellow]{metrics.duration:.2f}s[/yellow]"
+    console.print(Panel(header_text, box=box.DOUBLE))
 
-    print(f"\n--- Request Summary ---")
-    print(f"Total Requests: {metrics.total_requests}")
-    print(f"Successful: {metrics.successful_requests}")
-    print(f"Failed: {metrics.failed_requests}")
-    print(f"Success Rate: {metrics.successful_requests/metrics.total_requests*100:.1f}%")
+    # Request Summary Table
+    summary_table = Table(title="Request Summary", box=box.ROUNDED, show_header=True, header_style="bold magenta")
+    summary_table.add_column("Metric", style="cyan")
+    summary_table.add_column("Value", justify="right", style="green")
 
-    print(f"\n--- Throughput ---")
-    print(f"Request Throughput: {metrics.request_throughput:.2f} req/s")
-    print(f"Token Throughput: {metrics.total_token_throughput:.2f} tok/s")
-    print(f"  Prompt Tokens: {metrics.prompt_token_throughput:.2f} tok/s")
-    print(f"  Completion Tokens: {metrics.completion_token_throughput:.2f} tok/s")
+    summary_table.add_row("Total Requests", str(metrics.total_requests))
+    summary_table.add_row("Successful", str(metrics.successful_requests))
+    summary_table.add_row("Failed", f"[red]{metrics.failed_requests}[/red]" if metrics.failed_requests > 0 else "0")
+    success_rate = metrics.successful_requests/metrics.total_requests*100 if metrics.total_requests > 0 else 0
+    summary_table.add_row("Success Rate", f"{success_rate:.1f}%")
+    console.print(summary_table)
 
-    print(f"\n--- Token Counts ---")
-    print(f"Total Prompt Tokens: {metrics.total_prompt_tokens:,}")
-    print(f"Total Completion Tokens: {metrics.total_completion_tokens:,}")
-    print(f"Total Tokens: {metrics.total_tokens:,}")
+    # Throughput Table
+    throughput_table = Table(title="Throughput", box=box.ROUNDED, show_header=True, header_style="bold magenta")
+    throughput_table.add_column("Metric", style="cyan")
+    throughput_table.add_column("Value", justify="right", style="green")
 
+    throughput_table.add_row("Request Throughput", f"{metrics.request_throughput:.2f} req/s")
+    throughput_table.add_row("Total Token Throughput", f"{metrics.total_token_throughput:.2f} tok/s")
+    throughput_table.add_row("  Prompt Tokens", f"{metrics.prompt_token_throughput:.2f} tok/s")
+    throughput_table.add_row("  Completion Tokens", f"{metrics.completion_token_throughput:.2f} tok/s")
+    console.print(throughput_table)
+
+    # Token Counts Table
+    token_table = Table(title="Token Counts", box=box.ROUNDED, show_header=True, header_style="bold magenta")
+    token_table.add_column("Token Type", style="cyan")
+    token_table.add_column("Count", justify="right", style="green")
+
+    token_table.add_row("Prompt Tokens", f"{metrics.total_prompt_tokens:,}")
+    token_table.add_row("Completion Tokens", f"{metrics.total_completion_tokens:,}")
+    token_table.add_row("Total Tokens", f"{metrics.total_tokens:,}")
+    console.print(token_table)
+
+    # Cache Statistics (if applicable)
     if metrics.cache_hit_count > 0:
-        print(f"\n--- Cache Statistics ---")
-        print(f"Cache Hits: {metrics.cache_hit_count}")
-        print(f"Cache Hit Rate: {metrics.cache_hit_rate*100:.1f}%")
+        cache_table = Table(title="Cache Statistics", box=box.ROUNDED, show_header=True, header_style="bold magenta")
+        cache_table.add_column("Metric", style="cyan")
+        cache_table.add_column("Value", justify="right", style="green")
 
-    # Print latency metrics
+        cache_table.add_row("Cache Hits", str(metrics.cache_hit_count))
+        cache_table.add_row("Cache Hit Rate", f"{metrics.cache_hit_rate*100:.1f}%")
+        console.print(cache_table)
+
+    # Latency metrics
     if metrics.ttft_stats:
-        print(f"\n--- Time to First Token (TTFT) ---")
-        _print_metric_stats(metrics.ttft_stats)
+        _print_metric_stats_table(metrics.ttft_stats, "Time to First Token (TTFT)")
 
     if metrics.e2el_stats:
-        print(f"\n--- End-to-End Latency (E2EL) ---")
-        _print_metric_stats(metrics.e2el_stats)
+        _print_metric_stats_table(metrics.e2el_stats, "End-to-End Latency (E2EL)")
 
     if metrics.tpot_stats:
-        print(f"\n--- Time Per Output Token (TPOT) ---")
-        _print_metric_stats(metrics.tpot_stats)
+        _print_metric_stats_table(metrics.tpot_stats, "Time Per Output Token (TPOT)")
 
     if metrics.itl_stats:
-        print(f"\n--- Inter-Token Latency (ITL) ---")
-        _print_metric_stats(metrics.itl_stats)
+        _print_metric_stats_table(metrics.itl_stats, "Inter-Token Latency (ITL)")
 
     if metrics.queue_time_stats:
-        print(f"\n--- Queue Time (Server-Side) ---")
-        _print_metric_stats(metrics.queue_time_stats)
+        _print_metric_stats_table(metrics.queue_time_stats, "Queue Time (Server-Side)")
 
-    print(f"\n{'='*80}\n")
+    console.print()
 
 
-def _print_metric_stats(stats: MetricStats):
-    """Helper to print metric statistics."""
-    print(f"  Mean:   {stats.mean*1000:8.2f} ms")
-    print(f"  Median: {stats.median*1000:8.2f} ms")
-    print(f"  Std:    {stats.std*1000:8.2f} ms")
-    print(f"  Min:    {stats.min*1000:8.2f} ms")
-    print(f"  Max:    {stats.max*1000:8.2f} ms")
-    print(f"  Percentiles:")
+def _print_metric_stats_table(stats: MetricStats, title: str):
+    """Helper to print metric statistics as a Rich table."""
+    table = Table(title=title, box=box.ROUNDED, show_header=True, header_style="bold magenta")
+    table.add_column("Statistic", style="cyan")
+    table.add_column("Value (ms)", justify="right", style="green")
+
+    table.add_row("Mean", f"{stats.mean*1000:.2f}")
+    table.add_row("Median", f"{stats.median*1000:.2f}")
+    table.add_row("Std Dev", f"{stats.std*1000:.2f}")
+    table.add_row("Min", f"{stats.min*1000:.2f}")
+    table.add_row("Max", f"{stats.max*1000:.2f}")
+
     for p, v in sorted(stats.percentiles.items()):
-        print(f"    p{p:2d}: {v*1000:8.2f} ms")
+        table.add_row(f"p{p}", f"{v*1000:.2f}")
+
+    console.print(table)
 
 
 def print_language_comparison(metrics_by_lang: Dict[str, BenchmarkMetrics]):
-    """Print comparison table across languages."""
+    """Print comparison table across languages using Rich."""
     if len(metrics_by_lang) < 2:
         return
 
     languages = sorted(metrics_by_lang.keys())
-
-    print(f"\n{'='*100}")
-    print(f"Language Comparison")
-    print(f"{'='*100}")
+    console.print()
+    console.print(Panel("[bold cyan]Language Comparison[/bold cyan]", box=box.DOUBLE))
 
     # Extract percentiles from first metric (they should all be the same)
     first_metric = next(iter(metrics_by_lang.values()))
     if first_metric.ttft_stats:
         percentiles = sorted(first_metric.ttft_stats.percentiles.keys())
 
-        print(f"\nTime to First Token (TTFT) - in milliseconds")
-        print(f"{'Percentile':<12}", end="")
+        # TTFT Comparison
+        ttft_table = Table(
+            title="Time to First Token (TTFT) - milliseconds",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold magenta"
+        )
+        ttft_table.add_column("Percentile", style="cyan", justify="left")
         for lang in languages:
-            print(f"{lang:>12}", end="")
+            ttft_table.add_column(lang.upper(), justify="right", style="green")
         if len(languages) == 2:
-            print(f"{'Difference':>12}", end="")
-        print()
-        print("-" * (12 + 12 * len(languages) + (12 if len(languages) == 2 else 0)))
+            ttft_table.add_column("Difference", justify="right", style="yellow")
 
         for p in percentiles:
-            print(f"p{p:<10d}", end="")
+            row = [f"p{p}"]
             values = []
             for lang in languages:
                 metric = metrics_by_lang[lang]
                 if metric.ttft_stats and p in metric.ttft_stats.percentiles:
                     val = metric.ttft_stats.percentiles[p] * 1000
                     values.append(val)
-                    print(f"{val:>12.1f}", end="")
+                    row.append(f"{val:.1f}")
                 else:
-                    print(f"{'N/A':>12}", end="")
+                    row.append("N/A")
 
             if len(values) == 2:
                 diff = values[1] - values[0]
-                print(f"{diff:>12.1f}", end="")
-            print()
+                color = "red" if diff > 0 else "green" if diff < 0 else "white"
+                row.append(f"[{color}]{diff:+.1f}[/{color}]")
 
-    # Add E2E Latency comparison
+            ttft_table.add_row(*row)
+
+        console.print(ttft_table)
+
+    # E2E Latency comparison
     if first_metric.e2el_stats:
-        print(f"\nEnd-to-End Latency (E2EL) - in milliseconds")
-        print(f"{'Percentile':<12}", end="")
+        e2el_table = Table(
+            title="End-to-End Latency (E2EL) - milliseconds",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold magenta"
+        )
+        e2el_table.add_column("Percentile", style="cyan", justify="left")
         for lang in languages:
-            print(f"{lang:>12}", end="")
+            e2el_table.add_column(lang.upper(), justify="right", style="green")
         if len(languages) == 2:
-            print(f"{'Difference':>12}", end="")
-        print()
-        print("-" * (12 + 12 * len(languages) + (12 if len(languages) == 2 else 0)))
+            e2el_table.add_column("Difference", justify="right", style="yellow")
 
         for p in percentiles:
-            print(f"p{p:<10d}", end="")
+            row = [f"p{p}"]
             values = []
             for lang in languages:
                 metric = metrics_by_lang[lang]
                 if metric.e2el_stats and p in metric.e2el_stats.percentiles:
                     val = metric.e2el_stats.percentiles[p] * 1000
                     values.append(val)
-                    print(f"{val:>12.1f}", end="")
+                    row.append(f"{val:.1f}")
                 else:
-                    print(f"{'N/A':>12}", end="")
+                    row.append("N/A")
 
             if len(values) == 2:
                 diff = values[1] - values[0]
-                print(f"{diff:>12.1f}", end="")
-            print()
+                color = "red" if diff > 0 else "green" if diff < 0 else "white"
+                row.append(f"[{color}]{diff:+.1f}[/{color}]")
 
-    # Add Server-Side Timing comparison
+            e2el_table.add_row(*row)
+
+        console.print(e2el_table)
+
+    # Server-Side Timing comparison
     if first_metric.server_total_time_stats:
-        print(f"\nServer-Side Breakdown - in milliseconds")
-        print(f"{'Metric':<20}{'Percentile':<12}", end="")
+        server_table = Table(
+            title="Server-Side Breakdown - milliseconds",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold magenta"
+        )
+        server_table.add_column("Metric", style="cyan", justify="left")
+        server_table.add_column("Percentile", style="cyan", justify="left")
         for lang in languages:
-            print(f"{lang:>12}", end="")
+            server_table.add_column(lang.upper(), justify="right", style="green")
         if len(languages) == 2:
-            print(f"{'Difference':>12}", end="")
-        print()
-        print("-" * (32 + 12 * len(languages) + (12 if len(languages) == 2 else 0)))
+            server_table.add_column("Difference", justify="right", style="yellow")
 
         # Queue Time
         if first_metric.queue_time_stats:
             for p in percentiles:
-                print(f"{'Queue Time':<20}p{p:<10d}", end="")
+                row = ["Queue Time", f"p{p}"]
                 values = []
                 for lang in languages:
                     metric = metrics_by_lang[lang]
                     if metric.queue_time_stats and p in metric.queue_time_stats.percentiles:
                         val = metric.queue_time_stats.percentiles[p] * 1000
                         values.append(val)
-                        print(f"{val:>12.1f}", end="")
+                        row.append(f"{val:.1f}")
                     else:
-                        print(f"{'N/A':>12}", end="")
+                        row.append("N/A")
                 if len(values) == 2:
-                    print(f"{values[1]-values[0]:>12.1f}", end="")
-                print()
+                    diff = values[1] - values[0]
+                    color = "red" if diff > 0 else "green" if diff < 0 else "white"
+                    row.append(f"[{color}]{diff:+.1f}[/{color}]")
+                server_table.add_row(*row)
 
         # Prompt Time
         if first_metric.prompt_time_stats:
             for p in percentiles:
-                print(f"{'Prompt Time':<20}p{p:<10d}", end="")
+                row = ["Prompt Time", f"p{p}"]
                 values = []
                 for lang in languages:
                     metric = metrics_by_lang[lang]
                     if metric.prompt_time_stats and p in metric.prompt_time_stats.percentiles:
                         val = metric.prompt_time_stats.percentiles[p] * 1000
                         values.append(val)
-                        print(f"{val:>12.1f}", end="")
+                        row.append(f"{val:.1f}")
                     else:
-                        print(f"{'N/A':>12}", end="")
+                        row.append("N/A")
                 if len(values) == 2:
-                    print(f"{values[1]-values[0]:>12.1f}", end="")
-                print()
+                    diff = values[1] - values[0]
+                    color = "red" if diff > 0 else "green" if diff < 0 else "white"
+                    row.append(f"[{color}]{diff:+.1f}[/{color}]")
+                server_table.add_row(*row)
 
         # Completion Time
         if first_metric.completion_time_stats:
             for p in percentiles:
-                print(f"{'Completion Time':<20}p{p:<10d}", end="")
+                row = ["Completion Time", f"p{p}"]
                 values = []
                 for lang in languages:
                     metric = metrics_by_lang[lang]
                     if metric.completion_time_stats and p in metric.completion_time_stats.percentiles:
                         val = metric.completion_time_stats.percentiles[p] * 1000
                         values.append(val)
-                        print(f"{val:>12.1f}", end="")
+                        row.append(f"{val:.1f}")
                     else:
-                        print(f"{'N/A':>12}", end="")
+                        row.append("N/A")
                 if len(values) == 2:
-                    print(f"{values[1]-values[0]:>12.1f}", end="")
-                print()
+                    diff = values[1] - values[0]
+                    color = "red" if diff > 0 else "green" if diff < 0 else "white"
+                    row.append(f"[{color}]{diff:+.1f}[/{color}]")
+                server_table.add_row(*row)
 
         # Server Total Time
         for p in percentiles:
-            print(f"{'Server Total':<20}p{p:<10d}", end="")
+            row = ["Server Total", f"p{p}"]
             values = []
             for lang in languages:
                 metric = metrics_by_lang[lang]
                 if metric.server_total_time_stats and p in metric.server_total_time_stats.percentiles:
                     val = metric.server_total_time_stats.percentiles[p] * 1000
                     values.append(val)
-                    print(f"{val:>12.1f}", end="")
+                    row.append(f"{val:.1f}")
                 else:
-                    print(f"{'N/A':>12}", end="")
+                    row.append("N/A")
             if len(values) == 2:
-                print(f"{values[1]-values[0]:>12.1f}", end="")
-            print()
+                diff = values[1] - values[0]
+                color = "red" if diff > 0 else "green" if diff < 0 else "white"
+                row.append(f"[{color}]{diff:+.1f}[/{color}]")
+            server_table.add_row(*row)
+
+        console.print(server_table)
 
     # Network Overhead - separate section
     if first_metric.network_time_stats:
-        print(f"\nNetwork Overhead - in milliseconds")
-        print(f"{'Percentile':<12}", end="")
+        network_table = Table(
+            title="Network Overhead - milliseconds",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold magenta"
+        )
+        network_table.add_column("Percentile", style="cyan", justify="left")
         for lang in languages:
-            print(f"{lang:>12}", end="")
+            network_table.add_column(lang.upper(), justify="right", style="green")
         if len(languages) == 2:
-            print(f"{'Difference':>12}", end="")
-        print()
-        print("-" * (12 + 12 * len(languages) + (12 if len(languages) == 2 else 0)))
+            network_table.add_column("Difference", justify="right", style="yellow")
 
         for p in percentiles:
-            print(f"p{p:<10d}", end="")
+            row = [f"p{p}"]
             values = []
             for lang in languages:
                 metric = metrics_by_lang[lang]
                 if metric.network_time_stats and p in metric.network_time_stats.percentiles:
                     val = metric.network_time_stats.percentiles[p] * 1000
                     values.append(val)
-                    print(f"{val:>12.1f}", end="")
+                    row.append(f"{val:.1f}")
                 else:
-                    print(f"{'N/A':>12}", end="")
+                    row.append("N/A")
             if len(values) == 2:
-                print(f"{values[1]-values[0]:>12.1f}", end="")
-            print()
+                diff = values[1] - values[0]
+                color = "red" if diff > 0 else "green" if diff < 0 else "white"
+                row.append(f"[{color}]{diff:+.1f}[/{color}]")
+            network_table.add_row(*row)
 
-    print(f"\n{'='*100}\n")
+        console.print(network_table)
+
+    console.print()
 
 
 def save_results(
@@ -514,4 +577,4 @@ def save_results(
     with open(output_file, 'w') as f:
         json.dump(result, f, indent=2)
 
-    print(f"Results saved to: {output_file}")
+    console.print(f"[green]Results saved to: {output_file}[/green]")

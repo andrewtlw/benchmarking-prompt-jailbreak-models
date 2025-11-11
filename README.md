@@ -160,20 +160,85 @@ Both `jailbreaks_english.json` and `jailbreaks_japanese.json` contain **100 prom
 
 Results are saved as JSON with full metrics breakdown. Per-language metrics are calculated automatically when multiple languages are present in the dataset.
 
-Example output tables:
-```
-Time to First Token (TTFT) - in milliseconds
-Percentile    English (ms)    Japanese (ms)    Difference (ms)
-p1            327.9           2415.7           2087.7
-p50           2478.7          3534.1           1055.4
-p99           5117.7          5701.3           583.5
+### Sample Output
 
-End-to-End Latency (E2EL) - in milliseconds
-Percentile    English (ms)    Japanese (ms)    Difference (ms)
-p1            350.2           2450.3           2100.1
-p50           2478.7          3534.1           1055.4
-p99           5117.7          5701.3           583.5
+The benchmark produces beautifully formatted tables using Rich library with color-coded output:
+
 ```
+Starting benchmark:
+  Model: openai/gpt-oss-safeguard-20b
+  Prompts: 3
+  Max Concurrency: 2
+
+  Running requests... ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:00
+
+Benchmark completed in 0.83s
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║ Overall Results                                                              ║
+║ Model: openai/gpt-oss-safeguard-20b | Duration: 0.83s                        ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+      Request Summary
+╭────────────────┬────────╮
+│ Metric         │  Value │
+├────────────────┼────────┤
+│ Total Requests │      3 │
+│ Successful     │      3 │
+│ Failed         │      0 │
+│ Success Rate   │ 100.0% │
+╰────────────────┴────────╯
+
+                Throughput
+╭────────────────────────┬───────────────╮
+│ Metric                 │         Value │
+├────────────────────────┼───────────────┤
+│ Request Throughput     │    3.62 req/s │
+│ Total Token Throughput │ 2454.50 tok/s │
+│   Prompt Tokens        │ 1890.68 tok/s │
+│   Completion Tokens    │  563.82 tok/s │
+╰────────────────────────┴───────────────╯
+
+Time to First Token (TTFT)
+╭───────────┬────────────╮
+│ Statistic │ Value (ms) │
+├───────────┼────────────┤
+│ Mean      │     408.02 │
+│ Median    │     432.34 │
+│ Std Dev   │      55.86 │
+│ Min       │     330.76 │
+│ Max       │     460.94 │
+│ p50       │     432.34 │
+│ p90       │     455.22 │
+│ p99       │     460.37 │
+╰───────────┴────────────╯
+```
+
+### Multi-Language Comparison
+
+When benchmarking multiple languages, automatic comparison tables show differences:
+
+```
+╔══════════════════════════════════════════════════════════════════════════════╗
+║ Language Comparison                                                          ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+Time to First Token (TTFT) - milliseconds
+╭────────────┬──────────┬──────────┬────────────╮
+│ Percentile │       EN │       JA │ Difference │
+├────────────┼──────────┼──────────┼────────────┤
+│ p1         │    213.7 │    238.7 │     +25.0  │
+│ p50        │    260.4 │    316.8 │     +56.3  │
+│ p99        │    491.3 │    669.3 │    +178.1  │
+╰────────────┴──────────┴──────────┴────────────╯
+```
+
+**Features:**
+- 🎨 **Color-coded output**: Cyan headers, green values, yellow highlights
+- 📊 **Professional tables**: Rounded boxes with proper alignment
+- 🔴 **Red differences**: Slower performance highlighted
+- 🟢 **Green differences**: Faster performance highlighted
+- ⏱️ **Animated progress**: Spinner and real-time progress tracking
 
 ## CLI Options
 
