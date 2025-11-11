@@ -1,6 +1,6 @@
 # Groq API Benchmarking
 
-Benchmark latency and performance of Groq API models with support for multiple languages and percentile analysis.
+Benchmark suite for comparing prompt injection detection models on Groq's API. Features model-specific prompt formatting, multi-language support, comprehensive metrics, and automatic network overhead analysis.
 
 ## Quick Start
 
@@ -11,7 +11,8 @@ Benchmark latency and performance of Groq API models with support for multiple l
 
 2. **Set up API key:**
    ```bash
-   echo "GROQ_API_KEY=your_api_key_here" > .env
+   cp .env.example .env
+   # Edit .env and add your GROQ_API_KEY
    ```
 
 3. **Generate sample datasets (100 prompts each):**
@@ -21,7 +22,11 @@ Benchmark latency and performance of Groq API models with support for multiple l
 
 4. **Run a quick benchmark:**
    ```bash
+   # GPT-OSS-Safeguard (default) - uses system prompt
    uv run python benchmark_groq.py --dataset datasets/jailbreaks_english.json --max-concurrency 5
+
+   # Llama 3.1 8B - uses user prompt with embedded instructions
+   uv run python benchmark_groq.py --model llama-3.1-8b-instant --dataset datasets/jailbreaks_english.json --max-concurrency 5
    ```
 
 ## Usage Examples
@@ -81,6 +86,24 @@ uv run python benchmark_groq.py \
   --disable-cache \
   --max-concurrency 10
 ```
+
+## Model-Specific Prompt Formats
+
+The benchmark automatically uses the optimal prompt format for each model:
+
+### GPT-OSS-Safeguard (openai/gpt-oss-safeguard-20b)
+- **System message**: Full detection policy with user input embedded
+- **User message**: "Please analyze the content above."
+- Best for: Leveraging system-level instructions
+
+### Llama 3.1 8B Instant (llama-3.1-8b-instant)
+- **Single user message**: Instructions, examples, and input combined
+- **No system prompt**: Optimized for model compatibility
+- Best for: Multilingual detection with embedded prompts
+
+### Llama Prompt Guard (meta-llama/llama-prompt-guard-2-86m)
+- **Direct prompt**: No modifications
+- Best for: Fast classification baseline
 
 ## Metrics Captured
 

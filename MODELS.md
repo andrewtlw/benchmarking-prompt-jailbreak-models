@@ -12,7 +12,12 @@ Purpose-built for detecting prompt injection attacks and jailbreak attempts.
 **Features:**
 - Supports `reasoning_effort` parameter (`low`, `medium`, `high`)
 - Optimized for security classification tasks
-- Returns structured responses for violation detection
+- Returns structured JSON responses for violation detection
+- Uses system prompt with embedded detection policy
+
+**Prompt Format (automatic):**
+- System message: Full detection policy with input embedded
+- User message: "Please analyze the content above."
 
 **Example:**
 ```bash
@@ -46,13 +51,18 @@ uv run python benchmark_groq.py \
 ### Llama 3.1 8B Instant
 **Model ID:** `llama-3.1-8b-instant`
 
-Fast, efficient general-purpose language model with multilingual support.
+Fast, efficient general-purpose language model adapted for prompt injection detection.
 
 **Features:**
 - Excellent multilingual capabilities (English, Japanese, etc.)
 - Optimized for low latency ("instant" variant)
-- Good for baseline comparison benchmarks
+- Can be prompted for security classification tasks
 - 8B parameters - balanced size/performance
+- Uses user prompt format (no system message)
+
+**Prompt Format (automatic):**
+- Single user message with embedded instructions, examples, and input
+- No system prompt (for optimal model compatibility)
 
 **Example:**
 ```bash
